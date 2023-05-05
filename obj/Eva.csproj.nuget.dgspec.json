@@ -1,0 +1,89 @@
+{
+  "format": 1,
+  "restore": {
+    "/home/asaka/VSProjects/Eva/Eva.csproj": {}
+  },
+  "projects": {
+    "/home/asaka/VSProjects/Eva/Eva.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/home/asaka/VSProjects/Eva/Eva.csproj",
+        "projectName": "Eva",
+        "projectPath": "/home/asaka/VSProjects/Eva/Eva.csproj",
+        "packagesPath": "/home/asaka/.nuget/packages/",
+        "outputPath": "/home/asaka/VSProjects/Eva/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/home/asaka/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net7.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net7.0": {
+            "targetAlias": "net7.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        }
+      },
+      "frameworks": {
+        "net7.0": {
+          "targetAlias": "net7.0",
+          "dependencies": {
+            "Microsoft.Playwright": {
+              "target": "Package",
+              "version": "[1.33.0, )"
+            },
+            "TwitchLib": {
+              "target": "Package",
+              "version": "[3.5.3, )"
+            },
+            "TwitchLib.Api": {
+              "target": "Package",
+              "version": "[3.9.0, )"
+            },
+            "TwitchLib.Api.Core": {
+              "target": "Package",
+              "version": "[3.9.0, )"
+            },
+            "TwitchLib.Api.V5": {
+              "target": "Package",
+              "version": "[3.3.0, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "downloadDependencies": [
+            {
+              "name": "Microsoft.AspNetCore.App.Ref",
+              "version": "[7.0.3, 7.0.3]"
+            }
+          ],
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/7.0.103/RuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}
