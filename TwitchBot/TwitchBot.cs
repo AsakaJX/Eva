@@ -12,6 +12,7 @@ namespace Eva.TwitchBot {
     public delegate Task<string> TranslateFinishedEvent();
     public delegate string EvaResponeGeneratedEvent();
     public delegate string TranslateFinalEvent();
+    public delegate void VoiceVoxStarted();
     public class TwitchBotEvents {
         public event VoiceVoxExitedEvent? onVoiceVoxExited = null;
         public void onVoiceVoxExitedInvoke() {
@@ -20,6 +21,10 @@ namespace Eva.TwitchBot {
         public event VoiceVoxPlayerExitedEvent? onVoiceVoxPlayerExited = null;
         public void onVoiceVoxPlayerExitedInvoke() {
             onVoiceVoxPlayerExited?.Invoke();
+        }
+        public event VoiceVoxStarted? onVoiceVoxStarted = null;
+        public void onVoiceVoxStartedInvoke() {
+            onVoiceVoxStarted?.Invoke();
         }
         // ! Translate -> GenerateResponse -> Translate
         public event TranslateFinishedEvent? onTranslateFinished = null;
@@ -51,23 +56,11 @@ namespace Eva.TwitchBot {
             client = new TwitchClient(customClient);
             client.Initialize(credentials, _TwitchUsername);
 
-            // Events handling
-            // client.OnConnected += Client_OnConnected;
-            // client.OnMessageReceived += Client_OnMessageReceived;
-
-            // EventHandler.onVoiceVoxExited += PlayAudio;
-            // EventHandler.onVoiceVoxPlayerExited += ChooseNextMessage;
-
-            // ! Getting message -> Translate -> Generate -> Translate -> VoiceVox
             client.OnConnected += Client_OnConnected;
             client.OnMessageReceived += Client_OnMessageReceived;
 
-            // EventHandler.onTranslateFinished += GetResponse;
-            // EventHandler.onTranslateFinalFinished += ChooseNextMessage;
             EventHandler.onVoiceVoxExited += PlayAudio;
             EventHandler.onVoiceVoxPlayerExited += ChooseNextMessage;
-
-            // TranslateFinishedEvent.
 
             client.Connect();
         }
@@ -75,7 +68,7 @@ namespace Eva.TwitchBot {
         // Events handling
         private async void Client_OnConnected(object? sender, OnConnectedArgs e) {
             Console.WriteLine($"🦽 Connected to chat! 🦽");
-            // await PlayAudio();
+
             string readyForEva = Translate("en", "やあ、ここで初めてメッセージを書くよ。");
             string EvaRespone = GetResponse(readyForEva);
             string EvaResponseFinal = Translate("ja", EvaRespone);
@@ -139,7 +132,7 @@ namespace Eva.TwitchBot {
 
         private string Translate(string translateTo = "ja", string input = "Hey, it's a test phrase!") {
             string result = "";
-            // _ = Task.Run(async () => {
+
             Process proc = new System.Diagnostics.Process();
             proc.StartInfo.FileName = "/bin/zsh";
             proc.StartInfo.Arguments = "-ic \" " + $"python ~/VSProjects/Eva/Python\\ Scripts/Translate.py \"\"{translateTo}\"\" \"\"{input}\"\"" + " \"";
@@ -156,18 +149,14 @@ namespace Eva.TwitchBot {
                 result = procreader.ReadToEnd();
                 Console.Write($"{addSpaces}   ╰ ✨ TRANSLATED PHRASE ✨\n{addSpaces}     ╰  {result}");
             }
-            // await Task.CompletedTask;
-            // if (translateTo == "en") { await GetResponse(result); }
+
             if (translateTo == "ja") { EvaResponseTranslated = result; Console.WriteLine($"{addSpaces}      ╰ 💎 EVA's RESPONSE TRANSLATED 💎\n{addSpaces}         ╰  {EvaResponseTranslated}"); }
             return result;
-            // });
-            // await Task.CompletedTask;
-            // return result;
         }
 
         private string GetResponse(string prompt = "What's your name ?") {
             string result = "";
-            // _ = Task.Run(async () => {
+
             Process proc = new System.Diagnostics.Process();
             proc.StartInfo.FileName = "/bin/zsh";
             proc.StartInfo.Arguments = "-ic \" " + $"python ~/VSProjects/Eva/Python\\ Scripts/ConversationAIRequest.py \"\"{prompt}\"\"" + " \"";
@@ -179,18 +168,11 @@ namespace Eva.TwitchBot {
 
             using (StreamReader procreader = proc.StandardOutput) {
                 result = procreader.ReadToEnd();
-                // int firstEVAResponse = result.IndexOf("EVA_RESPONSE: ");
-                // result = result.Substring(firstEVAResponse, result.IndexOf("EVA_RESPONSE: ", firstEVAResponse + "EVA_RESPONSE: ".Length));
                 result = result.Substring(result.IndexOf("EVA_FINAL: ") + "EVA_FINAL: ".Length).Replace("\n", "");
                 Console.WriteLine($"      ╰ 💎 EVA's RESPONSE 💎\n         ╰  {result}");
             }
-            // await Task.CompletedTask;
-            // EvaResponseTranslated = Translate("ja", result);
-            // VoiceVoxEventHandler.onVoiceVoxPlayerExitedInvoke(); // ! THIS IS FOR DEBUG PURPOSES, SHOULD BE REMOVED / COMMENTED
+
             return result;
-            // });
-            // await Task.CompletedTask;
-            // return result;
         }
 
         private async void ChooseNextMessage() {
@@ -211,13 +193,11 @@ namespace Eva.TwitchBot {
                 Console.Write($"☄️ NEXT PHRASE IS ☄️\n   ╰  {nextMessage}\n");
                 nextMessage = HttpUtility.UrlEncode(nextMessage.Trim());
 
-                // string readyForEva = await Translate("en", nextMessage);
                 string readyForEva = Translate("en", nextMessage);
                 string EvaRespone = GetResponse(readyForEva);
                 EvaResponseTranslated = Translate("ja", EvaRespone);
                 await RunVoiceVox(EvaResponseTranslated);
 
-                // RunVoiceVox(nextMessage);
                 await Task.CompletedTask;
             });
             await Task.CompletedTask;
