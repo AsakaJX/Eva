@@ -7,22 +7,25 @@ from playwright.sync_api import Playwright, sync_playwright, expect
 
 def run(playwright: Playwright) -> None:
     print(f'### Requested phrase ###\n{sys.argv[1]}\n')
-    browser = playwright.chromium.launch(headless=False)
+    browser = playwright.chromium.launch(headless=True)
     context = browser.new_context()
     page = context.new_page()
-    page.goto("https://fffb6bf10d4c86efdb.gradio.live/")
+    page.goto("https://f5a62bada5ac4069f9.gradio.live/")
 
     page.get_by_role("button", name="Clear history").click()
     page.get_by_role("button", name="Confirm").click()
 
-    page.get_by_text("Character gallery ▼").click()
-    page.get_by_text("Refresh EVA Example").click()
+    page.locator("#component-272").click()
+    page.locator("#component-276 button").first.click()
+
     page.get_by_label("Input", exact=True).click()
     page.get_by_label("Input", exact=True).fill(sys.argv[1])
-    page.get_by_role("button", name="Generate", exact=True).click()
+    page.get_by_label("Input", exact=True).press("Enter")
 
     chat_response_locator = "#chat div"
     page.wait_for_selector(chat_response_locator)
+
+    # input()
 
     downBad = [
         "Is typing...",
@@ -39,7 +42,7 @@ def run(playwright: Playwright) -> None:
         counter += 1
         continueFlag = False
 
-        msg = page.locator(chat_response_locator).all_inner_texts()[0].removeprefix("EVA\n\n")
+        msg = page.locator(chat_response_locator).all_inner_texts()[0].strip().replace("\n","").removeprefix("EVA")
         if msg == "Is typing...":
             is_typing_flag = True
         
@@ -55,7 +58,7 @@ def run(playwright: Playwright) -> None:
             repeat_counter = 0
 
         if is_typing_flag and repeat_counter == 3:
-            print(f'\n\n\n### Final ###\n{msg}')
+            print(f'\n\n\nEVA_FINAL: \n{msg}')
             break
 
         for i in range(0, len(msg)):
@@ -63,9 +66,10 @@ def run(playwright: Playwright) -> None:
                 continueFlag = True
                 break
 
-        print(msg)
+        print(f'EVA_RESPONSE: {msg}')
         
     # ---------------------
+    # input()
     context.close()
     browser.close()
 
