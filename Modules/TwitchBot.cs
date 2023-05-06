@@ -64,7 +64,7 @@ namespace Eva.Modules.TwitchBot {
             client.OnMessageReceived += Client_OnMessageReceived;
 
             EventHandler.onVoiceVoxExited += PlayAudio;
-            // EventHandler.onVoiceVoxStarted += something;
+            // EventHandler.onVoiceVoxStarted += something; // !
             EventHandler.onVoiceVoxPlayerExited += ChooseNextMessage;
 
             client.Connect();
@@ -72,16 +72,16 @@ namespace Eva.Modules.TwitchBot {
 
         // Events handling
         private async void Client_OnConnected(object? sender, OnConnectedArgs e) {
-            Console.WriteLine($"🦽 Connected to chat! 🦽");
+            log.NewLog(LogSeverity.Info, "Twitch Module", "Connected to chat!");
 
             string readyForEva = Translate("en", "やあ、ここで初めてメッセージを書くよ。");
-            string EvaRespone = GetResponse(readyForEva);
-            string EvaResponseFinal = Translate("ja", EvaRespone);
+            string EvaResponse = GetResponse(readyForEva);
+            string EvaResponseFinal = Translate("ja", EvaResponse);
             await RunVoiceVox(EvaResponseFinal);
         }
 
         private void Client_OnMessageReceived(object? sender, OnMessageReceivedArgs e) {
-            Console.WriteLine($"{e.ChatMessage.Username} : {e.ChatMessage.Message}");
+            log.NewLog(LogSeverity.Info, "Twitch Module", $"{e.ChatMessage.Username} wrote {e.ChatMessage.Message}");
 
             if (!_nextMessageStack.ContainsKey(e.ChatMessage.Username)) {
                 _nextMessageStack.Add(e.ChatMessage.Username, e.ChatMessage.Message);
@@ -93,19 +93,21 @@ namespace Eva.Modules.TwitchBot {
 
         private async Task RunVoiceVox(string msg) {
             _ = Task.Run(async () => {
-                Process proc = new Process();
-                proc.StartInfo.FileName = "/bin/zsh";
-                proc.StartInfo.Arguments = "-c \" " + $"cd ~/VoiceVox/;echo \"\"{msg}\"\" >text.txt;voicevox_generate" + " \"";
-                proc.StartInfo.UseShellExecute = false;
-                proc.StartInfo.RedirectStandardOutput = true;
-                proc.StartInfo.RedirectStandardError = true;
-                proc.StartInfo.CreateNoWindow = true;
-                proc.Start();
+                try {
+                    Process proc = new Process();
+                    proc.StartInfo.FileName = "/bin/zsh";
+                    proc.StartInfo.Arguments = "-ic \" " + $"cd ~/VoiceVox/;echo \"\"{msg}\"\" >text.txt;voicevox_generate" + " \"";
+                    proc.StartInfo.UseShellExecute = false;
+                    proc.StartInfo.RedirectStandardOutput = true;
+                    proc.StartInfo.RedirectStandardError = true;
+                    proc.StartInfo.CreateNoWindow = true;
+                    proc.Start();
 
-                using (StreamReader procreader = proc.StandardOutput) {
-                    string result = procreader.ReadToEnd();
-                    Console.WriteLine(result);
-                }
+                    using (StreamReader procreader = proc.StandardOutput) {
+                        string result = procreader.ReadToEnd();
+                    }
+                } catch (Exception ex) { log.NewLog(LogSeverity.Warning, "Twitch Module|VoiceVox", ex.ToString(), 1); }
+
                 EventHandler.onVoiceVoxExitedInvoke();
                 await Task.CompletedTask;
             });
@@ -114,20 +116,21 @@ namespace Eva.Modules.TwitchBot {
 
         private async Task PlayAudio() {
             _ = Task.Run(async () => {
-                Process proc = new Process();
-                proc.StartInfo.FileName = "/bin/zsh";
-                proc.StartInfo.Arguments = "-c \" " + $"fuckyou" + " \"";
-                proc.StartInfo.UseShellExecute = false;
-                proc.StartInfo.RedirectStandardOutput = true;
-                proc.StartInfo.RedirectStandardError = true;
-                proc.StartInfo.CreateNoWindow = true;
-                proc.Start();
+                try {
+                    Process proc = new Process();
+                    proc.StartInfo.FileName = "/bin/zsh";
+                    proc.StartInfo.Arguments = "-ic \" " + $"fuckyou" + " \"";
+                    proc.StartInfo.UseShellExecute = false;
+                    proc.StartInfo.RedirectStandardOutput = true;
+                    proc.StartInfo.RedirectStandardError = true;
+                    proc.StartInfo.CreateNoWindow = true;
+                    proc.Start();
 
-                using (StreamReader procreader = proc.StandardOutput) {
-                    string result = procreader.ReadToEnd();
-                    //Console.WriteLine(result);
-                }
-                Console.WriteLine("✅ [VOICEVOX] Played successfully! ✅");
+                    using (StreamReader procreader = proc.StandardOutput) {
+                        string result = procreader.ReadToEnd();
+                    }
+                } catch (Exception ex) { log.NewLog(LogSeverity.Warning, "Twitch Module|VoiceVox", ex.ToString(), 1); }
+                log.NewLog(LogSeverity.Info, "Twitch Module|VoiceVox", "Phrase played successfully!", 1);
                 EventHandler.onVoiceVoxPlayerExitedInvoke();
                 await Task.CompletedTask;
             });
@@ -146,15 +149,12 @@ namespace Eva.Modules.TwitchBot {
             proc.StartInfo.CreateNoWindow = true;
             proc.Start();
 
-            string addSpaces = "";
-            if (translateTo == "ja") { addSpaces = "        "; }
-
             using (StreamReader procreader = proc.StandardOutput) {
                 result = procreader.ReadToEnd();
-                Console.Write($"{addSpaces}   ╰ ✨ TRANSLATED PHRASE ✨\n{addSpaces}     ╰  {result}");
+                log.NewLog(LogSeverity.Info, "Twitch Module|Translate", $"Translated phrase: {result.Replace("\n", " ")}", 1);
             }
 
-            if (translateTo == "ja") { EvaResponseTranslated = result; Console.WriteLine($"{addSpaces}      ╰ 💎 EVA's RESPONSE TRANSLATED 💎\n{addSpaces}         ╰  {EvaResponseTranslated}"); }
+            if (translateTo == "ja") { EvaResponseTranslated = result; log.NewLog(LogSeverity.Info, "Twitch Module|Translate", $"Response translated: {EvaResponseTranslated.Replace("\n", " ")} ", 1); }
             return result;
         }
 
@@ -163,7 +163,7 @@ namespace Eva.Modules.TwitchBot {
 
             Process proc = new Process();
             proc.StartInfo.FileName = "/bin/zsh";
-            proc.StartInfo.Arguments = "-ic \" " + $"python ~/VSProjects/Eva/Python\\ Scripts/ConversationAIRequest.py \"\"{prompt}\"\"" + " \"";
+            proc.StartInfo.Arguments = "-c \" " + $"cd ~/VSProjects/Eva/Python\\ Scripts/;python ConversationAIRequest.py \"\"{prompt}\"\"" + " \"";
             proc.StartInfo.UseShellExecute = false;
             proc.StartInfo.RedirectStandardOutput = true;
             proc.StartInfo.RedirectStandardError = true;
@@ -173,8 +173,8 @@ namespace Eva.Modules.TwitchBot {
             using (StreamReader procreader = proc.StandardOutput) {
                 result = procreader.ReadToEnd();
 
-                result = result.Substring(result.IndexOf("EVA_FINAL: ") + "EVA_FINAL: ".Length).Replace("\n", "");
-                Console.WriteLine($"      ╰ 💎 EVA's RESPONSE 💎\n         ╰  {result}");
+                result = result.Substring(result.IndexOf("EVA_FINAL: ") + "EVA_FINAL: ".Length).Replace("\n", " ");
+                log.NewLog(LogSeverity.Info, "Twitch Module|Eva", $"Response: {result}", 1);
             }
 
             return result;
@@ -185,7 +185,7 @@ namespace Eva.Modules.TwitchBot {
 
             _ = Task.Run(async () => {
                 // Console.Clear();
-                Console.Write("🛏️ STOPPING FOR 2.5 SECONDS... 🛏️\n ╰ "); // ! [2.5 SECONDS] <- SUBJECT TO CHANGE
+                log.NewLog(LogSeverity.Info, "Twitch Module|Next Message", $"Waiting for 2.5 seconds...");
                 Thread.Sleep(2500);
                 string nextMessage = "";
                 if (_nextMessageStack.Count > 1) {
@@ -193,14 +193,15 @@ namespace Eva.Modules.TwitchBot {
                     _nextMessageStack.Clear();
                     _nextMessageStack.Add(".empty", "");
                 }
-                if (nextMessage == "") { Console.Write("🗿 NEXT MESSAGE IS EMPTY 🗿\n"); ChooseNextMessage(); return; }
+                if (nextMessage == "") { log.NewLog(LogSeverity.Verbose, "Twitch Module|Next Message", $"Next message is empty."); ChooseNextMessage(); return; }
 
-                Console.Write($"☄️ NEXT PHRASE IS ☄️\n   ╰  {nextMessage}\n");
+                log.NewLog(LogSeverity.Info, "Twitch Module|Next Message", $"Next message is: {nextMessage}", 1);
                 nextMessage = HttpUtility.UrlEncode(nextMessage.Trim());
 
                 string readyForEva = Translate("en", nextMessage);
                 string EvaRespone = GetResponse(readyForEva);
                 EvaResponseTranslated = Translate("ja", EvaRespone);
+                log.NewLog(LogSeverity.Debug, "Twitch Module|Next Message", $"EvaResponseTranslated: {EvaResponseTranslated}", 1);
                 await RunVoiceVox(EvaResponseTranslated);
 
                 await Task.CompletedTask;
