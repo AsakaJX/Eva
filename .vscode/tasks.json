@@ -11,7 +11,10 @@
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary",
             ],
-            "problemMatcher": "$msCompile"
+            "problemMatcher": "$msCompile",
+            "presentation": {
+                "clear": true
+            }
         },
         {
             "label": "publish",
@@ -23,7 +26,10 @@
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary"
             ],
-            "problemMatcher": "$msCompile"
+            "problemMatcher": "$msCompile",
+            "presentation": {
+                "clear": true
+            }
         },
         {
             "label": "watch",
@@ -35,7 +41,10 @@
                 "--project",
                 "${workspaceFolder}/Eva.csproj"
             ],
-            "problemMatcher": "$msCompile"
+            "problemMatcher": "$msCompile",
+            "presentation": {
+                "clear": true
+            }
         }
     ]
 }

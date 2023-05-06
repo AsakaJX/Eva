@@ -10,13 +10,16 @@ def run(playwright: Playwright) -> None:
     browser = playwright.chromium.launch(headless=True)
     context = browser.new_context()
     page = context.new_page()
-    page.goto("https://f5a62bada5ac4069f9.gradio.live/")
+    f = open("ColabLink.txt", "r")
+    colabLink = f.read()
+    f.close()
+    page.goto(f"{colabLink}")
 
     page.get_by_role("button", name="Clear history").click()
     page.get_by_role("button", name="Confirm").click()
 
-    page.locator("#component-272").click()
-    page.locator("#component-276 button").first.click()
+    page.locator("#component-273").click()
+    page.locator("#component-277 button").first.click()
 
     page.get_by_label("Input", exact=True).click()
     page.get_by_label("Input", exact=True).fill(sys.argv[1])

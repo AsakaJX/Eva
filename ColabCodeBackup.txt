@@ -1,0 +1,158 @@
+#@title 1. Keep this tab alive to prevent Colab from disconnecting you { display-mode: "form" }
+
+#@markdown Press play on the music player that will appear below:
+%%html
+<audio src="https://oobabooga.github.io/silence.m4a" controls>
+
+
+
+
+
+#@title 2. Install the web UI
+
+save_logs_to_google_drive = False #@param {type:"boolean"}
+
+if save_logs_to_google_drive:
+  import os
+  import shutil
+  from google.colab import drive
+  drive.mount('/content/drive')
+  base_folder = '/content/drive/MyDrive'
+
+%cd /content
+!git clone https://github.com/oobabooga/text-generation-webui
+if save_logs_to_google_drive:
+  if not os.path.exists(f"{base_folder}/oobabooga-data"):
+    os.mkdir(f"{base_folder}/oobabooga-data")
+  if not os.path.exists(f"{base_folder}/oobabooga-data/logs"):
+    os.mkdir(f"{base_folder}/oobabooga-data/logs")
+  if not os.path.exists(f"{base_folder}/oobabooga-data/softprompts"):
+    os.mkdir(f"{base_folder}/oobabooga-data/softprompts")
+  if not os.path.exists(f"{base_folder}/oobabooga-data/characters"):
+    shutil.move("text-generation-webui/characters", f"{base_folder}/oobabooga-data/characters")
+  else:
+    !rm -r "text-generation-webui/characters"
+    
+  !rm -r "text-generation-webui/softprompts"
+  !ln -s "$base_folder/oobabooga-data/logs" "text-generation-webui/logs"
+  !ln -s "$base_folder/oobabooga-data/softprompts" "text-generation-webui/softprompts"
+  !ln -s "$base_folder/oobabooga-data/characters" "text-generation-webui/characters"
+
+else:
+  !mkdir text-generation-webui/logs
+
+!ln -s text-generation-webui/logs .
+!ln -s text-generation-webui/characters .
+!ln -s text-generation-webui/models .
+%rm -r sample_data
+%cd text-generation-webui
+#!git checkout a04b7cf2643a5950fc215deac7f76b4b31336a81
+!wget https://oobabooga.github.io/settings-colab.json -O settings-colab-template.json
+
+# Install requirements
+!pip install -r requirements.txt
+!pip install -r extensions/google_translate/requirements.txt
+!pip install -r extensions/silero_tts/requirements.txt
+print(f"\033[1;32;1m\n --> If you see a warning about \"pydevd_plugins\", just ignore it and move on to Step 3. There is no need to restart the runtime.\n\033[0;37;0m")
+
+
+
+
+
+
+#@title 3. Launch
+
+import json
+
+# Parameters
+model = "Pygmalion 6B main (sharded, rehosted)" #@param ["Pygmalion 6B original (sharded, rehosted)", "Pygmalion 6B main (sharded, rehosted)", "Pygmalion 6B dev (sharded, rehosted)", "GALACTICA 125M (for debugging)"] {allow-input: false}
+text_streaming = True #@param {type:"boolean"}
+cai_chat = False #@param {type:"boolean"}
+load_in_8bit = False #@param {type:"boolean"}
+activate_silero_text_to_speech = False #@param {type:"boolean"}
+activate_sending_pictures = False #@param {type:"boolean"}
+activate_character_bias = False #@param {type:"boolean"}
+chat_language = "English" # @param ['Afrikaans', 'Albanian', 'Amharic', 'Arabic', 'Armenian', 'Azerbaijani', 'Basque', 'Belarusian', 'Bengali', 'Bosnian', 'Bulgarian', 'Catalan', 'Cebuano', 'Chinese (Simplified)', 'Chinese (Traditional)', 'Corsican', 'Croatian', 'Czech', 'Danish', 'Dutch', 'English', 'Esperanto', 'Estonian', 'Finnish', 'French', 'Frisian', 'Galician', 'Georgian', 'German', 'Greek', 'Gujarati', 'Haitian Creole', 'Hausa', 'Hawaiian', 'Hebrew', 'Hindi', 'Hmong', 'Hungarian', 'Icelandic', 'Igbo', 'Indonesian', 'Irish', 'Italian', 'Japanese', 'Javanese', 'Kannada', 'Kazakh', 'Khmer', 'Korean', 'Kurdish', 'Kyrgyz', 'Lao', 'Latin', 'Latvian', 'Lithuanian', 'Luxembourgish', 'Macedonian', 'Malagasy', 'Malay', 'Malayalam', 'Maltese', 'Maori', 'Marathi', 'Mongolian', 'Myanmar (Burmese)', 'Nepali', 'Norwegian', 'Nyanja (Chichewa)', 'Pashto', 'Persian', 'Polish', 'Portuguese (Portugal, Brazil)', 'Punjabi', 'Romanian', 'Russian', 'Samoan', 'Scots Gaelic', 'Serbian', 'Sesotho', 'Shona', 'Sindhi', 'Sinhala (Sinhalese)', 'Slovak', 'Slovenian', 'Somali', 'Spanish', 'Sundanese', 'Swahili', 'Swedish', 'Tagalog (Filipino)', 'Tajik', 'Tamil', 'Telugu', 'Thai', 'Turkish', 'Ukrainian', 'Urdu', 'Uzbek', 'Vietnamese', 'Welsh', 'Xhosa', 'Yiddish', 'Yoruba', 'Zulu']
+
+activate_google_translate = (chat_language != "English")
+
+# Data
+models = {
+    "Pygmalion 6B original (sharded, rehosted)": ("waifu-workshop", "pygmalion-6b", "original-sharded", "pygmalion-6b_original-sharded"),
+    "Pygmalion 6B main (sharded, rehosted)": ("waifu-workshop", "pygmalion-6b", "sharded", "pygmalion-6b_sharded"),
+    "Pygmalion 6B dev (sharded, rehosted)": ("waifu-workshop", "pygmalion-6b", "dev-sharded", "pygmalion-6b_dev-sharded"),
+    "GALACTICA 125M (for debugging)": ("facebook", "galactica-125m", "main", "galactica-125m"),
+}
+
+language_codes = {'Afrikaans': 'af', 'Albanian': 'sq', 'Amharic': 'am', 'Arabic': 'ar', 'Armenian': 'hy', 'Azerbaijani': 'az', 'Basque': 'eu', 'Belarusian': 'be', 'Bengali': 'bn', 'Bosnian': 'bs', 'Bulgarian': 'bg', 'Catalan': 'ca', 'Cebuano': 'ceb', 'Chinese (Simplified)': 'zh-CN', 'Chinese (Traditional)': 'zh-TW', 'Corsican': 'co', 'Croatian': 'hr', 'Czech': 'cs', 'Danish': 'da', 'Dutch': 'nl', 'English': 'en', 'Esperanto': 'eo', 'Estonian': 'et', 'Finnish': 'fi', 'French': 'fr', 'Frisian': 'fy', 'Galician': 'gl', 'Georgian': 'ka', 'German': 'de', 'Greek': 'el', 'Gujarati': 'gu', 'Haitian Creole': 'ht', 'Hausa': 'ha', 'Hawaiian': 'haw', 'Hebrew': 'iw', 'Hindi': 'hi', 'Hmong': 'hmn', 'Hungarian': 'hu', 'Icelandic': 'is', 'Igbo': 'ig', 'Indonesian': 'id', 'Irish': 'ga', 'Italian': 'it', 'Japanese': 'ja', 'Javanese': 'jw', 'Kannada': 'kn', 'Kazakh': 'kk', 'Khmer': 'km', 'Korean': 'ko', 'Kurdish': 'ku', 'Kyrgyz': 'ky', 'Lao': 'lo', 'Latin': 'la', 'Latvian': 'lv', 'Lithuanian': 'lt', 'Luxembourgish': 'lb', 'Macedonian': 'mk', 'Malagasy': 'mg', 'Malay': 'ms', 'Malayalam': 'ml', 'Maltese': 'mt', 'Maori': 'mi', 'Marathi': 'mr', 'Mongolian': 'mn', 'Myanmar (Burmese)': 'my', 'Nepali': 'ne', 'Norwegian': 'no', 'Nyanja (Chichewa)': 'ny', 'Pashto': 'ps', 'Persian': 'fa', 'Polish': 'pl', 'Portuguese (Portugal, Brazil)': 'pt', 'Punjabi': 'pa', 'Romanian': 'ro', 'Russian': 'ru', 'Samoan': 'sm', 'Scots Gaelic': 'gd', 'Serbian': 'sr', 'Sesotho': 'st', 'Shona': 'sn', 'Sindhi': 'sd', 'Sinhala (Sinhalese)': 'si', 'Slovak': 'sk', 'Slovenian': 'sl', 'Somali': 'so', 'Spanish': 'es', 'Sundanese': 'su', 'Swahili': 'sw', 'Swedish': 'sv', 'Tagalog (Filipino)': 'tl', 'Tajik': 'tg', 'Tamil': 'ta', 'Telugu': 'te', 'Thai': 'th', 'Turkish': 'tr', 'Ukrainian': 'uk', 'Urdu': 'ur', 'Uzbek': 'uz', 'Vietnamese': 'vi', 'Welsh': 'cy', 'Xhosa': 'xh', 'Yiddish': 'yi', 'Yoruba': 'yo', 'Zulu': 'zu'}
+
+# Download the model (if it hasn't been downloaded already)
+huggingface_org, huggingface_repo, huggingface_branch, model_name = models[model]
+# !git lfs install
+#!git clone https://huggingface.co/$huggingface_org/$huggingface_repo --branch $huggingface_branch models/$model_name
+![[ ! -f models/$model_name/config.json ]] && git clone https://huggingface.co/$huggingface_org/$huggingface_repo --branch $huggingface_branch models/$model_name
+
+# Applying the selected language and setting the prompt size to 2048
+# if 8bit mode is selected
+j = json.loads(open('settings-colab-template.json', 'r').read())
+j["google_translate-language string"] = language_codes[chat_language]
+if load_in_8bit:
+  j["chat_prompt_size"] = 2048
+with open('settings-colab.json', 'w') as f:
+  f.write(json.dumps(j, indent=4))
+
+params = set()
+if cai_chat:
+  params.add('--cai-chat')
+else:
+  params.add('--chat')
+
+if load_in_8bit:
+  params.add('--load-in-8bit')
+
+active_extensions = ["api"]
+if activate_sending_pictures:
+  active_extensions.append('send_pictures')
+if activate_character_bias:
+  active_extensions.append('character_bias')
+if activate_google_translate:
+  active_extensions.append('google_translate')
+if activate_silero_text_to_speech:
+  active_extensions.append('silero_tts')
+active_extensions.append('gallery')
+
+if len(active_extensions) > 0:
+  params.add(f'--extensions {" ".join(active_extensions)}')
+
+if not text_streaming or activate_google_translate or activate_silero_text_to_speech:
+  params.add('--no-stream')
+if activate_character_bias:
+  params.add('--verbose')
+
+# Starting the web UI
+cmd = f"python server.py --share --api --model {model_name} --character EVA --settings settings-colab.json {' '.join(params)}"
+print(cmd)
+!$cmd
+
+
+
+
+
+#@title 4. Create character.json
+!touch characters/EVA.json
+
+
+
+
+
+#@title 5. Delete previously installed models
+
+!rm -rf models/*
+
+
+
+
+
+
+#@title 6. Remove EVA.json
+!rm characters/EVA*.json

@@ -1,12 +1,13 @@
 using System.Diagnostics;
 using System.Web;
+using Eva.Modules.Logger;
 using TwitchLib.Client;
 using TwitchLib.Client.Events;
 using TwitchLib.Client.Models;
 using TwitchLib.Communication.Clients;
 using TwitchLib.Communication.Models;
 
-namespace Eva.TwitchBot {
+namespace Eva.Modules.TwitchBot {
     public delegate Task VoiceVoxExitedEvent();
     public delegate void VoiceVoxPlayerExitedEvent();
     public delegate Task<string> TranslateFinishedEvent();
@@ -46,7 +47,10 @@ namespace Eva.TwitchBot {
         Dictionary<string, string> _nextMessageStack = new Dictionary<string, string>() { { ".empty", "" } };
         TwitchBotEvents EventHandler = new TwitchBotEvents();
         string EvaResponseTranslated = "@@@ EVA RESPONSE TRANSLATED @@@";
+        Log log = new Log();
         public TwitchBotInitialize() {
+            log.NewLog(LogSeverity.Info, "Twitch Module", "Twitch Module has been initialized!");
+
             ConnectionCredentials credentials = new ConnectionCredentials("asmrsama", "aqiooprzxv6yzm2i5rgjlrf8838glj");
             var clientOptions = new ClientOptions {
                 MessagesAllowedInPeriod = 750,
@@ -60,6 +64,7 @@ namespace Eva.TwitchBot {
             client.OnMessageReceived += Client_OnMessageReceived;
 
             EventHandler.onVoiceVoxExited += PlayAudio;
+            // EventHandler.onVoiceVoxStarted += something;
             EventHandler.onVoiceVoxPlayerExited += ChooseNextMessage;
 
             client.Connect();
@@ -86,17 +91,17 @@ namespace Eva.TwitchBot {
             }
         }
 
-        private async Task<Process> RunVoiceVox(string msg) {
-            Process proc = new System.Diagnostics.Process();
+        private async Task RunVoiceVox(string msg) {
             _ = Task.Run(async () => {
-                Console.WriteLine($"Current phrase: {msg}");
+                Process proc = new Process();
                 proc.StartInfo.FileName = "/bin/zsh";
-                proc.StartInfo.Arguments = "-ic \" " + $"cd ~/VoiceVox/;echo \"\"{msg}\"\" >text.txt;voicevox_generate" + " \"";
+                proc.StartInfo.Arguments = "-c \" " + $"cd ~/VoiceVox/;echo \"\"{msg}\"\" >text.txt;voicevox_generate" + " \"";
                 proc.StartInfo.UseShellExecute = false;
                 proc.StartInfo.RedirectStandardOutput = true;
                 proc.StartInfo.RedirectStandardError = true;
                 proc.StartInfo.CreateNoWindow = true;
                 proc.Start();
+
                 using (StreamReader procreader = proc.StandardOutput) {
                     string result = procreader.ReadToEnd();
                     Console.WriteLine(result);
@@ -105,14 +110,13 @@ namespace Eva.TwitchBot {
                 await Task.CompletedTask;
             });
             await Task.CompletedTask;
-            return proc;
         }
 
         private async Task PlayAudio() {
             _ = Task.Run(async () => {
-                Process proc = new System.Diagnostics.Process();
+                Process proc = new Process();
                 proc.StartInfo.FileName = "/bin/zsh";
-                proc.StartInfo.Arguments = "-ic \" " + "fuckyou" + " \"";
+                proc.StartInfo.Arguments = "-c \" " + $"fuckyou" + " \"";
                 proc.StartInfo.UseShellExecute = false;
                 proc.StartInfo.RedirectStandardOutput = true;
                 proc.StartInfo.RedirectStandardError = true;
@@ -133,9 +137,9 @@ namespace Eva.TwitchBot {
         private string Translate(string translateTo = "ja", string input = "Hey, it's a test phrase!") {
             string result = "";
 
-            Process proc = new System.Diagnostics.Process();
+            Process proc = new Process();
             proc.StartInfo.FileName = "/bin/zsh";
-            proc.StartInfo.Arguments = "-ic \" " + $"python ~/VSProjects/Eva/Python\\ Scripts/Translate.py \"\"{translateTo}\"\" \"\"{input}\"\"" + " \"";
+            proc.StartInfo.Arguments = "-c \" " + $"python ~/VSProjects/Eva/Python\\ Scripts/Translate.py \"\"{translateTo}\"\" \"\"{input}\"\"" + " \"";
             proc.StartInfo.UseShellExecute = false;
             proc.StartInfo.RedirectStandardOutput = true;
             proc.StartInfo.RedirectStandardError = true;
@@ -157,7 +161,7 @@ namespace Eva.TwitchBot {
         private string GetResponse(string prompt = "What's your name ?") {
             string result = "";
 
-            Process proc = new System.Diagnostics.Process();
+            Process proc = new Process();
             proc.StartInfo.FileName = "/bin/zsh";
             proc.StartInfo.Arguments = "-ic \" " + $"python ~/VSProjects/Eva/Python\\ Scripts/ConversationAIRequest.py \"\"{prompt}\"\"" + " \"";
             proc.StartInfo.UseShellExecute = false;
@@ -168,6 +172,7 @@ namespace Eva.TwitchBot {
 
             using (StreamReader procreader = proc.StandardOutput) {
                 result = procreader.ReadToEnd();
+
                 result = result.Substring(result.IndexOf("EVA_FINAL: ") + "EVA_FINAL: ".Length).Replace("\n", "");
                 Console.WriteLine($"      ╰ 💎 EVA's RESPONSE 💎\n         ╰  {result}");
             }
@@ -179,7 +184,7 @@ namespace Eva.TwitchBot {
             // TODO > Make next message normalizers (ex. remove links, emoji etc.)
 
             _ = Task.Run(async () => {
-                Console.Clear();
+                // Console.Clear();
                 Console.Write("🛏️ STOPPING FOR 2.5 SECONDS... 🛏️\n ╰ "); // ! [2.5 SECONDS] <- SUBJECT TO CHANGE
                 Thread.Sleep(2500);
                 string nextMessage = "";
